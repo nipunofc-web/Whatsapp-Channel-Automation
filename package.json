@@ -1,7 +1,7 @@
 {
-  "name": "money-heist-automation",
-  "version": "1.0.0",
-  "description": "WhatsApp Bot with Session ID",
+  "name": "n-tech-ofc-automation",
+  "version": "1.1.0",
+  "description": "WhatsApp Channel Automation Bot by N TECH OFC",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
