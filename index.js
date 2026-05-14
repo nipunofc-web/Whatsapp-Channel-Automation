@@ -34,8 +34,8 @@ client.on('ready', async () => {
 
     // CHANNEL IDS
     const channels = [
-        '120363XXXXXXX@newsletter',
-        '120363YYYYYYY@newsletter'
+        '120363413193872888@newsletter',
+        '120363398681287064@newsletter'
     ];
 
     // MESSAGE
