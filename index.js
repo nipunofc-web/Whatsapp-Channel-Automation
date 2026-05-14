@@ -12,8 +12,8 @@ const fs = require('fs-extra');
 const path = require('path');
 
 // --- සැකසුම් (CONFIG) ---
-const SESSION_ID = "𝙰𝚂𝙸𝚃𝙷𝙰-𝙼𝙳=a53f0ff4ae233550"; // ඔයා දුන්න ID එක
-const TARGET_NUMBER = "94757255903@s.whatsapp.net"; 
+const SESSION_ID = "𝙰𝚂𝙸𝚃𝙷𝙰-𝙼𝙳=a53f0ff4ae233550"; // ඔයාගේ අලුත් Session ID එක
+const TARGET_NUMBER = "94757255903@s.whatsapp.net"; // Connected බව දැනුම් දෙන නම්බර් එක
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
@@ -28,11 +28,11 @@ const mainMessage = `*​🎭 MONEY HEIST OFC TEAM 🎭*
 *​📧 [05] DATABASE CLOUD SYNC* * https://nipunofc.store/minibot/contact
 > *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
 
-// --- RENDER ALIVE & PORT BINDING ---
+// --- RENDER PORT FIX & ALIVE ---
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('N TECH OFC Bot is Active! 🚀'));
-app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
+app.get('/', (req, res) => res.send('N TECH OFC Bot Status: Active 🚀'));
+app.listen(port, () => console.log(`✅ Server is running on port ${port}`));
 
 // --- SESSION DECODER ---
 async function authInit() {
@@ -41,19 +41,18 @@ async function authInit() {
     if (!fs.existsSync(credsPath)) {
         try {
             if (!fs.existsSync(authPath)) fs.mkdirSync(authPath);
-            // Session ID එක base64 විදියට decode කර creds.json එක හදනවා
-            const decodedData = Buffer.from(SESSION_ID, 'base64').toString('utf-8');
+            const base64Data = SESSION_ID.split('=')[1];
+            const decodedData = Buffer.from(base64Data, 'base64').toString('utf-8');
             fs.writeFileSync(credsPath, decodedData);
-            console.log("✅ Session Files Decoded Successfully!");
+            console.log("✅ Session Files Created Successfully!");
         } catch (err) {
-            console.error("❌ Session ID Decoding Failed! ID එක නිවැරදිද බලන්න.");
+            console.error("❌ Session ID Decoding Failed!");
         }
     }
 }
 
 async function startBot() {
-    await authInit(); // මුලින්ම Session එක හදාගන්නවා
-    
+    await authInit();
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     const { version } = await fetchLatestBaileysVersion();
 
@@ -75,35 +74,32 @@ async function startBot() {
         
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('🔄 සබඳතාවය බිඳ වැටුණා. නැවත උත්සාහ කරයි...');
             if (shouldReconnect) startBot();
         } else if (connection === 'open') {
-            console.log('✅ බොට් සාර්ථකව සම්බන්ධ වුණා!');
-            
-            try {
-                const connMsg = `🚀 *N TECH OFC - CONNECTION SUCCESS* 🚀\n\n` +
-                                `> *Status:* Online\n` +
-                                `බෝට් දැන් සාර්ථකව සම්බන්ධ වී ඇත.\n\n` +
-                                `*ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
-                
-                await sock.sendMessage(TARGET_NUMBER, { text: connMsg });
-                console.log("📩 Success message sent to " + TARGET_NUMBER);
-            } catch (e) {
-                console.log("❌ Message Error: " + e.message);
+            console.log('✅ Connected Successfully!');
+
+            // 1. ඔයාගේ නම්බර් එකට Inbox මැසේජ් එකක් යවනවා
+            await sock.sendMessage(TARGET_NUMBER, { 
+                text: `🚀 *N TECH OFC - CONNECTED*\n\nඔබගේ බෝට් සාර්ථකව සම්බන්ධ විය.\nStatus: *Online*` 
+            });
+
+            // 2. ලින්ක් වුණු ගමන් චැනල් වලට මැසේජ් එක යැවීම (First Post)
+            console.log('📢 Sending initial post to channels...');
+            for (const jid of channelJids) {
+                try {
+                    await sock.sendMessage(jid, { text: mainMessage });
+                } catch (e) { console.error("Error: " + jid); }
             }
         }
     });
 
-    // Auto Schedule: 4, 9, 15, 21 (Asia/Colombo)
-    cron.schedule('0 5,9,15,21 * * *', async () => {
-        console.log('🕒 වෙලාව හරි! පණිවිඩය යවනවා...');
+    // Scheduled Posts: 4, 9, 15, 21
+    cron.schedule('0 4,9,15,21 * * *', async () => {
+        console.log('🕒 Scheduled Time reached. Posting...');
         for (const jid of channelJids) {
             try {
                 await sock.sendMessage(jid, { text: mainMessage });
-                console.log(`✅ Posted to ${jid}`);
-            } catch (err) {
-                console.error(`❌ Post failed: ${jid}`);
-            }
+            } catch (err) { console.error(`❌ Failed: ${jid}`); }
         }
     }, { scheduled: true, timezone: "Asia/Colombo" });
 }
