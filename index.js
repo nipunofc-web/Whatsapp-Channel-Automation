@@ -16,7 +16,7 @@ app.get('/', (req, res) => res.send('Bot is running! 🚀'));
 app.listen(port, () => console.log(`Server listening on port ${port}`));
 
 // --- BOT CONFIG ---
-const BOT_NUMBER = "94757255903"; 
+const BOT_NUMBER = "94743689803"; 
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
