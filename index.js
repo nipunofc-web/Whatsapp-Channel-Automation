@@ -12,16 +12,20 @@ const express = require('express');
 const fs = require('fs-extra');
 const path = require('path');
 
+// --- සැකසුම් (CONFIG) ---
 const SESSION_ID = "𝙰𝚂𝙸𝚃𝙷𝙰-𝙼𝙳=ca74e89d806b3333"; 
+const TARGET_NUMBER = "94757255903@s.whatsapp.net"; // මැසේජ් එක ලැබිය යුතු නම්බර් එක
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
 ];
 
+// --- RENDER PORT FIX & ALIVE ---
 const app = express();
 app.get('/', (req, res) => res.send('N TECH OFC Bot is Online 🚀'));
 app.listen(process.env.PORT || 10000);
 
+// --- SESSION DECODER ---
 async function authInit() {
     const authPath = './auth_info_baileys';
     const credsPath = path.join(authPath, 'creds.json');
@@ -74,26 +78,25 @@ async function startBot() {
         } else if (connection === 'open') {
             console.log('✅ Connected Successfully!');
 
-            // --- Inbox එකට මැසේජ් එක යැවීම ---
+            // --- ඔයාගේ අනෙක් නම්බර් එකට මැසේජ් එක යැවීම ---
             try {
-                // සැබෑ User ID එක ලබා ගැනීම
-                const myId = jidNormalizedUser(sock.user.id);
-                
                 const connMsg = `🚀 *N TECH OFC - CONNECTION SUCCESS* 🚀\n\n` +
-                                `> *Status:* Online\n` +
+                                `> *Status:* Bot is Online\n` +
                                 `> *Session:* ASITHA-MD Active\n\n` +
-                                `ඔබගේ බෝට් දැන් සාර්ථකව සම්බන්ධ වී ඇත.\n\n` +
+                                `ඔබගේ WhatsApp බෝට් එක සාර්ථකව සම්බන්ධ විය.\n\n` +
                                 `*ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
                 
-                await sock.sendMessage(myId, { text: connMsg });
-                console.log("📩 Connection message sent to inbox!");
+                await sock.sendMessage(TARGET_NUMBER, { text: connMsg });
+                console.log("📩 Connection message sent to " + TARGET_NUMBER);
             } catch (e) {
-                console.log("❌ Could not send inbox message: " + e.message);
+                console.log("❌ Could not send notification: " + e.message);
             }
         }
     });
 
+    // කාලසටහන: උදේ 4, 9, දවල් 3 (15), රෑ 9 (21)
     cron.schedule('0 4,9,15,21 * * *', async () => {
+        console.log('🕒 Posting to channels...');
         for (const jid of channelJids) {
             try {
                 await sock.sendMessage(jid, { text: mainMessage });
