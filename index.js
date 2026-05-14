@@ -1,18 +1,28 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { 
+    default: makeWASocket, 
+    useMultiFileAuthState, 
+    DisconnectReason, 
+    fetchLatestBaileysVersion, 
+    makeCacheableSignalKeyStore 
+} = require('@whiskeysockets/baileys');
 const cron = require('node-cron');
 const pino = require('pino');
 
-// යවන්න ඕන Message එක
-const message = `*​🎭 MONEY HEIST OFC TEAM 🎭*
+// --- සැකසුම් (CONFIGURATIONS) ---
+const BOT_NUMBER = "94757255903"; // මෙතනට ඔයාගේ නම්බර් එක දාන්න
+const channelJids = [
+    '120363398681287064@newsletter',
+    '120363413193872888@newsletter'
+];
+
+const messageText = `*​🎭 MONEY HEIST OFC TEAM 🎭*
 > *​// ᴀᴅᴍɪɴ ᴍʀ ɴɪᴘᴜɴ ᴏꜰᴄ*
-*​⚡ [01] DEPLOY MINIBOT* 
-* https://nipunofc.store/moneyheist
+*​⚡ [01] DEPLOY MINIBOT* * https://nipunofc.store/moneyheist
 
 *⚙️ [02] CORE CONFIGURATION*
 * https://nipunofc.store/minibot/setting
 
-*​🔥 [03] MINING FREE COINS* 
-* https://nipunofc.store/minibot/coin
+*​🔥 [03] MINING FREE COINS* * https://nipunofc.store/minibot/coin
 
 *​💬 [04] NEURAL AUTO-REPLIES*
 * https://nipunofc.store/minibot/autoreply
@@ -21,36 +31,33 @@ const message = `*​🎭 MONEY HEIST OFC TEAM 🎭*
 * https://nipunofc.store/minibot/contact
 > *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
 
-// ඔයාගේ Channel IDs ටික
-const channelJids = [
-    '120363398681287064@newsletter',
-    '120363413193872888@newsletter'
-];
-
-// ඔයාගේ බොට්ගෙ නම්බර් එක මෙතන දෙන්න (Pairing code ගන්න)
-const BOT_NUMBER = "94757255903"; 
-
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+    const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
-        auth: state,
+        version,
+        auth: {
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+        },
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: ["N TECH OFC Auto-Bot", "Chrome", "1.0.0"],
+        browser: ["Ubuntu", "Chrome", "20.0.04"],
     });
 
-    // Pairing Code එක Generate කිරීම
+    // Pairing Code එක ලබා ගැනීම (ලොග් වී නැත්නම් පමණක්)
     if (!sock.authState.creds.registered) {
+        console.log("⏳ Pairing Code එක සකසමින් පවතී...");
         setTimeout(async () => {
             try {
                 let code = await sock.requestPairingCode(BOT_NUMBER);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
-                console.log(`\n\n✅ WhatsApp එකට ලොග් වෙන්න මේ Pairing Code එක පාවිච්චි කරන්න: ${code}\n\n`);
+                console.log(`\n\n✅ ඔබගේ WhatsApp Pairing Code එක: ${code}\n\n`);
             } catch (err) {
-                console.log("Pairing code එක ගන්න බැරි වුණා:", err);
+                console.log("❌ Pairing code ලබා ගැනීමට අපහසුයි. කරුණාකර මද වෙලාවකින් නැවත උත්සාහ කරන්න.");
             }
-        }, 3000);
+        }, 6000); // තත්පර 6ක් රැඳී සිටින්න
     }
 
     sock.ev.on('creds.update', saveCreds);
@@ -59,25 +66,23 @@ async function startBot() {
         const { connection, lastDisconnect } = update;
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            if (shouldReconnect) {
-                startBot();
-            } else {
-                console.log('❌ Bot Logged out. auth_info_baileys folder එක delete කරලා ආයේ run කරන්න.');
-            }
+            console.log('🔄 සම්බන්ධතාවය බිඳ වැටුණි. නැවත සම්බන්ධ වෙමින්...', shouldReconnect);
+            if (shouldReconnect) startBot();
         } else if (connection === 'open') {
-            console.log('✅ Bot Connected Successfully!');
+            console.log('✅ බොට් සාර්ථකව සම්බන්ධ වුණා!');
         }
     });
 
-    // ලංකාවේ වෙලාවෙන් (Asia/Colombo) - උදේ 4(4), උදේ 9(9), දවල් 3(15), රෑ 9(21)
+    // කාලසටහන (Sri Lanka Time)
+    // උදේ 4, උදේ 9, දවල් 3 (15:00), රෑ 9 (21:00)
     cron.schedule('0 4,9,15,21 * * *', async () => {
-        console.log('🕒 වෙලාව හරි! Channels වලට massage එක යවනවා...');
+        console.log('🕒 පණිවිඩය යැවීමට වේලාව හරි...');
         for (const jid of channelJids) {
             try {
-                await sock.sendMessage(jid, { text: message });
-                console.log(`✅ ${jid} එකට massage එක යැව්වා.`);
+                await sock.sendMessage(jid, { text: messageText });
+                console.log(`✅ පණිවිඩය සාර්ථකව යැවුණා: ${jid}`);
             } catch (err) {
-                console.error(`❌ ${jid} එකට යවන්න බැරි වුණා:`, err);
+                console.error(`❌ පණිවිඩය යැවීමට නොහැකි වුණා: ${jid}`, err);
             }
         }
     }, {
@@ -86,4 +91,5 @@ async function startBot() {
     });
 }
 
-startBot();
+// බොට් ක්‍රියාත්මක කරන්න
+startBot().catch(err => console.log("Unexpected error: " + err));
