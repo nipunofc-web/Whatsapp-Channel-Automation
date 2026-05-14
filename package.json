@@ -1,15 +1,15 @@
 {
   "name": "wa-channel-bot",
   "version": "1.0.0",
-  "description": "WhatsApp Channel Auto Poster",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
     "node-cron": "^3.0.3",
-    "qrcode-terminal": "^0.12.0",
     "puppeteer": "^22.8.2",
+    "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.25.0"
   }
 }
