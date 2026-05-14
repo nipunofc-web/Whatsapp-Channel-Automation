@@ -12,7 +12,7 @@ const fs = require('fs-extra');
 const path = require('path');
 
 // --- සැකසුම් (CONFIG) ---
-const SESSION_ID = "ca74e89d806b3333"; // ඔයා දුන්න ID එක
+const SESSION_ID = "𝙰𝚂𝙸𝚃𝙷𝙰-𝙼𝙳=a53f0ff4ae233550"; // ඔයා දුන්න ID එක
 const TARGET_NUMBER = "94757255903@s.whatsapp.net"; 
 const channelJids = [
     '120363398681287064@newsletter',
