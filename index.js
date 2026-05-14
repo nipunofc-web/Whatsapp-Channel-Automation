@@ -8,8 +8,7 @@ const {
 const cron = require('node-cron');
 const pino = require('pino');
 
-// --- සැකසුම් (CONFIGURATIONS) ---
-const BOT_NUMBER = "94757255903"; // මෙතනට ඔයාගේ නම්බර් එක දාන්න
+const BOT_NUMBER = "94757255903"; 
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
@@ -32,6 +31,7 @@ const messageText = `*​🎭 MONEY HEIST OFC TEAM 🎭*
 > *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
 
 async function startBot() {
+    // 1. අනිවාර්යයෙන්ම පරණ auth_info_baileys folder එක delete කරන්න restart එකට කලින්
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     const { version } = await fetchLatestBaileysVersion();
 
@@ -43,21 +43,23 @@ async function startBot() {
         },
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: ["Ubuntu", "Chrome", "20.0.04"],
+        // Browser setting එක වෙනස් කළා (මේක ගොඩක් වැදගත්)
+        browser: ["Chrome (Linux)", "Chrome", "110.0.5481.177"], 
+        syncFullHistory: false
     });
 
-    // Pairing Code එක ලබා ගැනීම (ලොග් වී නැත්නම් පමණක්)
     if (!sock.authState.creds.registered) {
-        console.log("⏳ Pairing Code එක සකසමින් පවතී...");
+        console.log("⏳ Connection එක හදනවා... තත්පර 10ක් ඉන්න...");
         setTimeout(async () => {
             try {
+                // Request එක යවන්න කලින් පොඩි delay එකක් දීමෙන් block වීම වළක්වන්න පුළුවන්
                 let code = await sock.requestPairingCode(BOT_NUMBER);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
-                console.log(`\n\n✅ ඔබගේ WhatsApp Pairing Code එක: ${code}\n\n`);
+                console.log(`\n\n📢 ඔබේ කේතය (Pairing Code): ${code}\n\n`);
             } catch (err) {
-                console.log("❌ Pairing code ලබා ගැනීමට අපහසුයි. කරුණාකර මද වෙලාවකින් නැවත උත්සාහ කරන්න.");
+                console.error("❌ Pairing error: ", err.message);
             }
-        }, 6000); // තත්පර 6ක් රැඳී සිටින්න
+        }, 10000); 
     }
 
     sock.ev.on('creds.update', saveCreds);
@@ -66,30 +68,22 @@ async function startBot() {
         const { connection, lastDisconnect } = update;
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('🔄 සම්බන්ධතාවය බිඳ වැටුණි. නැවත සම්බන්ධ වෙමින්...', shouldReconnect);
             if (shouldReconnect) startBot();
         } else if (connection === 'open') {
-            console.log('✅ බොට් සාර්ථකව සම්බන්ධ වුණා!');
+            console.log('✅ බොට් සාර්ථකව සම්බන්ධ වුණා! දැන් වැඩේ 100% ක් හරි.');
         }
     });
 
-    // කාලසටහන (Sri Lanka Time)
-    // උදේ 4, උදේ 9, දවල් 3 (15:00), රෑ 9 (21:00)
     cron.schedule('0 4,9,15,21 * * *', async () => {
-        console.log('🕒 පණිවිඩය යැවීමට වේලාව හරි...');
         for (const jid of channelJids) {
             try {
                 await sock.sendMessage(jid, { text: messageText });
-                console.log(`✅ පණිවිඩය සාර්ථකව යැවුණා: ${jid}`);
+                console.log(`✅ Message Sent to: ${jid}`);
             } catch (err) {
-                console.error(`❌ පණිවිඩය යැවීමට නොහැකි වුණා: ${jid}`, err);
+                console.error(`❌ Send Error: ${jid}`);
             }
         }
-    }, {
-        scheduled: true,
-        timezone: "Asia/Colombo"
-    });
+    }, { scheduled: true, timezone: "Asia/Colombo" });
 }
 
-// බොට් ක්‍රියාත්මක කරන්න
-startBot().catch(err => console.log("Unexpected error: " + err));
+startBot();
