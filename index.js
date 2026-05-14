@@ -12,7 +12,7 @@ const express = require('express');
 const fs = require('fs-extra');
 const path = require('path');
 
-const SESSION_ID = "desam_mp629xqg_7au0emt4"; 
+const SESSION_ID = "𝙰𝚂𝙸𝚃𝙷𝙰-𝙼𝙳=ca74e89d806b3333"; 
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
