@@ -10,8 +10,8 @@ const pino = require('pino');
 const express = require('express');
 
 // --- සැකසුම් (CONFIG) ---
-const PAIR_NUMBER = "94743689803"; // Pairing Code එක එන්න ඕන නම්බර් එක
-const TARGET_NUMBER = "94757255903@s.whatsapp.net"; // Connected මැසේජ් එක යන්න ඕන නම්බර් එක
+const PAIR_NUMBER = "94743689803"; 
+const TARGET_NUMBER = "94757255903@s.whatsapp.net"; 
 const channelJids = [
     '120363398681287064@newsletter',
     '120363413193872888@newsletter'
@@ -26,14 +26,14 @@ const mainMessage = `*​🎭 MONEY HEIST OFC TEAM 🎭*
 *​📧 [05] DATABASE CLOUD SYNC* * https://nipunofc.store/minibot/contact
 > *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
 
-// --- RENDER PORT FIX ---
+// --- RENDER ALIVE & PORT BINDING ---
 const app = express();
 const port = process.env.PORT || 10000;
 app.get('/', (req, res) => res.send('N TECH OFC Bot is Active! 🚀'));
-app.listen(port, () => console.log(`Server listening on port ${port}`));
+app.listen(port, () => console.log(`✅ Server listening on port ${port}`));
 
 async function startBot() {
-    // Session එක save කරන්න folder එකක් හැදේ
+    // ඉතා වැදගත්: පරණ auth folder එකක් තිබේ නම් එය පාවිච්චි කරමින් පටන් ගනී
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     const { version } = await fetchLatestBaileysVersion();
 
@@ -45,21 +45,22 @@ async function startBot() {
         },
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: ["N TECH OFC", "Chrome", "1.0.0"],
+        browser: ["N TECH OFC", "Chrome", "1.0.0"], // මීට වඩා වෙනස් කරන්න එපා
     });
 
-    // --- PAIRING CODE REQUEST ---
+    // --- PAIRING CODE GENERATOR ---
     if (!sock.authState.creds.registered) {
         console.log(`⏳ ${PAIR_NUMBER} සඳහා Pairing Code එක සකසමින් පවතී...`);
+        // Render එකට Port එක Bind වෙන්න වෙලාව දෙන්න
         setTimeout(async () => {
             try {
                 let code = await sock.requestPairingCode(PAIR_NUMBER);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
-                console.log(`\n\n✅ ඔබගේ Pairing Code එක: ${code}\n\n`);
+                console.log(`\n\n📢 ඔබගේ PAIRING CODE එක: ${code}\n\n`);
             } catch (err) {
-                console.log("❌ Pairing Code එක ලබාගැනීම අසාර්ථකයි: " + err.message);
+                console.log("❌ Pairing Code error: " + err.message);
             }
-        }, 6000); // තත්පර 6ක ප්‍රමාදයක්
+        }, 10000); // තත්පර 10ක් රැඳී සිටීම
     }
 
     sock.ev.on('creds.update', saveCreds);
@@ -69,28 +70,20 @@ async function startBot() {
         
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('🔄 සබඳතාවය බිඳ වැටුණා. නැවත උත්සාහ කරයි...');
             if (shouldReconnect) startBot();
         } else if (connection === 'open') {
             console.log('✅ බොට් සාර්ථකව සම්බන්ධ වුණා!');
-
-            // --- TARGET NUMBER එකට මැසේජ් එක යැවීම ---
-            try {
-                const connMsg = `🚀 *N TECH OFC - CONNECTION SUCCESS* 🚀\n\n` +
-                                `> *Status:* Online\n` +
-                                `බෝට් සාර්ථකව සම්බන්ධ විය. දැන් Auto Message වැඩ කරනු ඇත.\n\n` +
-                                `*ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™*`;
-                
-                await sock.sendMessage(TARGET_NUMBER, { text: connMsg });
-                console.log("📩 Success message sent to " + TARGET_NUMBER);
-            } catch (e) {
-                console.log("❌ Message Error: " + e.message);
-            }
+            
+            // මැසේජ් එක යන බව තහවුරු කිරීම
+            await sock.sendMessage(TARGET_NUMBER, { 
+                text: "🚀 *N TECH OFC - CONNECTION SUCCESS*\n\nබෝට් දැන් Online ඇත." 
+            });
         }
     });
 
     // Auto Schedule: 4, 9, 15, 21
     cron.schedule('0 4,9,15,21 * * *', async () => {
-        console.log('🕒 වෙලාව හරි! පණිවිඩය යවනවා...');
         for (const jid of channelJids) {
             try {
                 await sock.sendMessage(jid, { text: mainMessage });
