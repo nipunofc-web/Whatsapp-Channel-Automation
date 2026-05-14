@@ -1,44 +1,54 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const cron = require('node-cron');
-const puppeteer = require('puppeteer');
 
 const client = new Client({
+
     authStrategy: new LocalAuth({
         dataPath: './session'
     }),
 
     puppeteer: {
         headless: true,
-        executablePath: puppeteer.executablePath(),
+
+        executablePath:
+            process.env.PUPPETEER_EXECUTABLE_PATH ||
+            '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome',
+
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
+            '--single-process'
         ]
+
     }
+
 });
 
 client.on('qr', (qr) => {
+
     console.log('SCAN THIS QR CODE');
-    qrcode.generate(qr, { small: true });
+
+    qrcode.generate(qr, {
+        small: true
+    });
+
 });
 
 client.on('ready', async () => {
 
-    console.log('BOT READY');
+    console.log('BOT READY 😒');
 
-    // CHANNEL IDS
     const channels = [
         '120363413193872888@newsletter',
         '120363398681287064@newsletter'
     ];
 
-    // MESSAGE
     const message = `🎭 MONEY HEIST OFC TEAM 🎭
 > // ᴀᴅᴍɪɴ ᴍʀ ɴɪᴘᴜɴ ᴏꜰᴄ
 
@@ -59,8 +69,7 @@ https://nipunofc.store/minibot/contact
 
 > ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴ ᴛᴇᴄʜ ᴏꜰᴄ™`;
 
-    // SEND FUNCTION
-    async function sendToAllChannels() {
+    async function sendMessages() {
 
         for (const channel of channels) {
 
@@ -72,7 +81,7 @@ https://nipunofc.store/minibot/contact
 
             } catch (err) {
 
-                console.log(`FAILED TO SEND TO ${channel}`);
+                console.log(`FAILED ${channel}`);
                 console.log(err);
 
             }
@@ -81,25 +90,10 @@ https://nipunofc.store/minibot/contact
 
     }
 
-    // 4 AM
-    cron.schedule('0 4 * * *', async () => {
-        await sendToAllChannels();
-    });
-
-    // 9 AM
-    cron.schedule('0 9 * * *', async () => {
-        await sendToAllChannels();
-    });
-
-    // 3 PM
-    cron.schedule('0 15 * * *', async () => {
-        await sendToAllChannels();
-    });
-
-    // 9 PM
-    cron.schedule('0 21 * * *', async () => {
-        await sendToAllChannels();
-    });
+    cron.schedule('0 4 * * *', sendMessages);
+    cron.schedule('0 9 * * *', sendMessages);
+    cron.schedule('0 15 * * *', sendMessages);
+    cron.schedule('0 21 * * *', sendMessages);
 
 });
 
