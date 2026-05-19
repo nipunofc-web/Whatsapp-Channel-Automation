@@ -17,7 +17,7 @@ META_ACCESS_TOKEN = "EAF8ZAQAuHmGIBRYecunM2R9okQuFMQS1l32drx0APGBFZAWJlvelVAFNlE
 WA_CHANNEL_JID = "120363413193872888@newsletter"  # ඔයා දුන්න ඇත්තම චැනල් ID එක 🎯
 
 # ⚠️ කමාන්ඩ්ස් එවන්න ඔයා පාවිච්චි කරන ඔයාගේ ඇත්තම WhatsApp නම්බර් එක (රටේ කේතය සහිතව - උදා: 94771234567) 👇
-ADMIN_NUMBER = "94771234567" 
+ADMIN_NUMBER = "94743689803" 
 VERIFY_TOKEN = "my_secret_bot_123" # Meta එකට දෙන රහස් Verify Token එක
 
 SL_TZ = pytz.timezone('Asia/Colombo')
