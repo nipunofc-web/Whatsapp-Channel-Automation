@@ -17,12 +17,13 @@ PHONE_NUMBER_ID = "1037234516150757"
 META_ACCESS_TOKEN = "EAF8ZAQAuHmGIBRVKkP7ZC1XEEIFhhi4LwLBgHcRWAZAB10TeYkH9b7ZAZBbozoZCOljJFEynrByQghqa9xUaxuZBd2ZCGH8K1K28DdJlH6jmsGoumyvzAusPK7RhoB1HbIqN4tqpbnS9rNCqpj3HwIk9Sq1xaRuMFawYJZClukJBLF1Gqdy6gIiSVJ9J7QOkgowZDZD"
 WA_CHANNEL_JID = "120363413193872888@newsletter"  
 
-ADMIN_NUMBER = "94743689803" 
+# 🚨 ADMIN NUMBER එක නිවැරදිව සකසා ඇත (ලොග් පරීක්ෂාව වඩාත් පහසු කිරීමට අග කොටස පමණක් සලකයි)
+ADMIN_PURE_NUMBER = "94743689803"
 VERIFY_TOKEN = "my_secret_bot_123" 
 
 SL_TZ = pytz.timezone('Asia/Colombo')
 
-# 🛠️ Interpreter Shutdown Error එක නැති කරන්න සකසන ලද Scheduler එක
+# 🛠️ Scheduler & Flask Setup
 scheduler = BackgroundScheduler(timezone=SL_TZ, daemon=True)
 flask_app = Flask('')
 
@@ -56,15 +57,22 @@ def send_official_whatsapp_message(to_jid_or_num, text):
         "Authorization": f"Bearer {META_ACCESS_TOKEN}",
         "Content-Type": "application/json"
     }
+    
+    # 📢 චැනල් එකකට (Newsletter) යවනවා නම් recipient_type එක අයින් කරන්න ඕනේ
     payload = {
         "messaging_product": "whatsapp",
-        "recipient_type": "individual",
         "to": to_jid_or_num,
         "type": "text",
         "text": {"preview_url": True, "body": text}
     }
+    
+    # සාමාන්‍ය Chat එකකට නම් පමණක් recipient_type එක දානවා
+    if "@newsletter" not in str(to_jid_or_num):
+        payload["recipient_type"] = "individual"
+
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
+        print(f"Message Sent to {to_jid_or_num}. Response: {response.json()}")
         return response.json()
     except Exception as e:
         print("Official API Failed to send:", e)
@@ -115,7 +123,7 @@ def process_bot_command(command_text):
     elif command_text == ".stop":
         db["scheduler_status"] = "stopped"
         save_db(db)
-        return "🛑 *Auto Scheduler එක තාවකාලිකව නැවැත්තුවا!*"
+        return "🛑 *Auto Scheduler එක තාවකාලිකව නැවැත්තුවා!*"
     elif command_text.startswith(".set "):
         time_raw_data = command_text.replace(".set ", "")
         raw_list = time_raw_data.split(",")
@@ -150,7 +158,7 @@ def webhook():
         challenge = request.args.get('hub.challenge')
         if mode == 'subscribe' and token == VERIFY_TOKEN:
             print("Webhook Verified Successfully! 🎉")
-            send_official_whatsapp_message(ADMIN_NUMBER, "🚀 *Bot Connection Successful!*\n\nඔයාගේ සෙඩියුලර් බොට් නිල WhatsApp Cloud API එකත් එක්ක සාර්ථකව සම්බන්ධ වුණා මගේ මැණික. 🥰✨")
+            send_official_whatsapp_message(ADMIN_PURE_NUMBER, "🚀 *Bot Connection Successful!*\n\nඔයාගේ සෙඩියුලර් බොට් නිල WhatsApp Cloud API එකත් එක්ක සාර්ථකව සම්බන්ධ වුණා මගේ මැණික. 🥰✨")
             return challenge, 200
         return 'Verification token mismatch', 403
 
@@ -162,12 +170,17 @@ def webhook():
                     for change in entry['changes']:
                         if change['value'].get('messages'):
                             message = change['value']['messages'][0]
-                            from_num = message['from']
-                            if from_num == ADMIN_NUMBER and message['type'] == 'text':
+                            from_num = str(message['from']).strip()
+                            
+                            print(f"📩 Incoming Message from: {from_num} | Text: {message.get('text', {}).get('body')}")
+                            
+                            # 🔄 රටේ කේතයේ වෙනස්කම් මඟහැරීමට අග ඉලක්කම් 9 සසඳයි (743689803)
+                            if from_num.endswith("743689803") and message['type'] == 'text':
                                 text = message['text']['body'].strip()
                                 reply_msg = process_bot_command(text)
                                 if reply_msg:
-                                    send_official_whatsapp_message(ADMIN_NUMBER, reply_msg)
+                                    # ආපු නම්බර් එකටම කෙලින්ම රිප්ලයි එක යවයි
+                                    send_official_whatsapp_message(from_num, reply_msg)
         except Exception as e:
             print("Error processing webhook data:", e)
         return jsonify({"status": "success"}), 200
@@ -182,7 +195,6 @@ def run_web():
     port = int(os.environ.get("PORT", 8080))
     flask_app.run(host='0.0.0.0', port=port)
 
-# 🛑 සර්වර් එක වැහෙද්දී Scheduler එක ආරක්ෂිතව නිවා දමන පද්ධතිය
 def cleanup_at_exit():
     if scheduler.running:
         scheduler.shutdown(wait=False)
@@ -190,12 +202,8 @@ def cleanup_at_exit():
 if __name__ == '__main__':
     reload_scheduler_jobs()
     scheduler.start()
-    atexit.register(cleanup_at_exit) # Shutdown එක ලස්සනට හැඬ්ල් කරයි
+    atexit.register(cleanup_at_exit)
     
-    # self_ping එක විතරක් background thread එකක run කරනවා
     Thread(target=self_ping, daemon=True).start()
-    
     print("All Systems Started Safely with Shutdown Handlers!")
-    
-    # Flask Web සර්වර් එක Main Thread එකේම රන් කරනවා (කලින් තිබුණු Thread එක අයින් කළා)
     run_web()
