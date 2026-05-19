@@ -191,6 +191,11 @@ if __name__ == '__main__':
     reload_scheduler_jobs()
     scheduler.start()
     atexit.register(cleanup_at_exit) # Shutdown එක ලස්සනට හැඬ්ල් කරයි
-    Thread(target=run_web, daemon=True).start()
+    
+    # self_ping එක විතරක් background thread එකක run කරනවා
     Thread(target=self_ping, daemon=True).start()
+    
     print("All Systems Started Safely with Shutdown Handlers!")
+    
+    # Flask Web සර්වර් එක Main Thread එකේම රන් කරනවා (කලින් තිබුණු Thread එක අයින් කළා)
+    run_web()
