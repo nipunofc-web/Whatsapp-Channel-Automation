@@ -17,7 +17,7 @@ PHONE_NUMBER_ID = "1037234516150757"
 META_ACCESS_TOKEN = "EAF8ZAQAuHmGIBRVKkP7ZC1XEEIFhhi4LwLBgHcRWAZAB10TeYkH9b7ZAZBbozoZCOljJFEynrByQghqa9xUaxuZBd2ZCGH8K1K28DdJlH6jmsGoumyvzAusPK7RhoB1HbIqN4tqpbnS9rNCqpj3HwIk9Sq1xaRuMFawYJZClukJBLF1Gqdy6gIiSVJ9J7QOkgowZDZD"
 WA_CHANNEL_JID = "120363413193872888@newsletter"  
 
-# 🚨 ADMIN NUMBER එක නිවැරදිව සකසා ඇත (ලොග් පරීක්ෂාව වඩාත් පහසු කිරීමට අග කොටස පමණක් සලකයි)
+# 🚨 ADMIN NUMBER එක (අග කොටස පමණක් සසඳයි)
 ADMIN_PURE_NUMBER = "94743689803"
 VERIFY_TOKEN = "my_secret_bot_123" 
 
@@ -58,7 +58,6 @@ def send_official_whatsapp_message(to_jid_or_num, text):
         "Content-Type": "application/json"
     }
     
-    # 📢 චැනල් එකකට (Newsletter) යවනවා නම් recipient_type එක අයින් කරන්න ඕනේ
     payload = {
         "messaging_product": "whatsapp",
         "to": to_jid_or_num,
@@ -66,7 +65,7 @@ def send_official_whatsapp_message(to_jid_or_num, text):
         "text": {"preview_url": True, "body": text}
     }
     
-    # සාමාන්‍ය Chat එකකට නම් පමණක් recipient_type එක දානවා
+    # චැනල් එකකට නොවේ නම් පමණක් recipient_type එක individual දායි
     if "@newsletter" not in str(to_jid_or_num):
         payload["recipient_type"] = "individual"
 
@@ -174,12 +173,10 @@ def webhook():
                             
                             print(f"📩 Incoming Message from: {from_num} | Text: {message.get('text', {}).get('body')}")
                             
-                            # 🔄 රටේ කේතයේ වෙනස්කම් මඟහැරීමට අග ඉලක්කම් 9 සසඳයි (743689803)
                             if from_num.endswith("743689803") and message['type'] == 'text':
                                 text = message['text']['body'].strip()
                                 reply_msg = process_bot_command(text)
                                 if reply_msg:
-                                    # ආපු නම්බර් එකටම කෙලින්ම රිප්ලයි එක යවයි
                                     send_official_whatsapp_message(from_num, reply_msg)
         except Exception as e:
             print("Error processing webhook data:", e)
@@ -187,8 +184,11 @@ def webhook():
 
 def self_ping():
     while True:
-        try: requests.get("https://selfcare-bot-python.onrender.com", timeout=10)
-        except: pass
+        try: 
+            # 🔄 මෙතනට ඔයාගේ අලුත් ලින්ක් එක නිවැරදිව දැම්මා (සර්වර් එක 24/7 Live තියන්න)
+            requests.get("https://whatsapp-channel-automation.onrender.com", timeout=10)
+        except: 
+            pass
         time.sleep(600)
 
 def run_web():
