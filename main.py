@@ -13,8 +13,8 @@ API_KEY = "$2a$10$OBbATu.0sP8Tp6aIpz.4/.5GDh89dJyKwTJfO9j88y2JrvefEFOVC"
 
 # --- 🟢 WHATSAPP API CONFIGURATIONS ---
 # ⚠️ මෙන්න මේ පේළි 3ට විතරක් ඔයා UltraMsg එකෙන් ගත්ත විස්තර දාන්න පැටියෝ 👇
-WA_API_URL = "https://api.ultramsg.com/instance99999/messages/chat"  # ඔයාගේ Instance ID එක අගට දාන්න
-WA_TOKEN = "ab12cd34ef56gh78ij90"  # UltraMsg එකෙන් දුන්න දිග Token එක මෙතනට දාන්න
+WA_API_URL = "https://api.ultramsg.com/instance176348/"  # ඔයාගේ Instance ID එක අගට දාන්න
+WA_TOKEN = "8t1oesxpsxpect1o"  # UltraMsg එකෙන් දුන්න දිග Token එක මෙතනට දාන්න
 WA_CHANNEL_JID = "1203632123456789@newsletter"  # චැනල් එකේ @newsletter ID එක මෙතනට දාන්න
 
 SL_TZ = pytz.timezone('Asia/Colombo')
