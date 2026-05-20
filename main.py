@@ -17,7 +17,7 @@ PHONE_NUMBER_ID = "1037234516150757"
 META_ACCESS_TOKEN = "EAF8ZAQAuHmGIBRVKkP7ZC1XEEIFhhi4LwLBgHcRWAZAB10TeYkH9b7ZAZBbozoZCOljJFEynrByQghqa9xUaxuZBd2ZCGH8K1K28DdJlH6jmsGoumyvzAusPK7RhoB1HbIqN4tqpbnS9rNCqpj3HwIk9Sq1xaRuMFawYJZClukJBLF1Gqdy6gIiSVJ9J7QOkgowZDZD"
 WA_CHANNEL_JID = "120363413193872888@newsletter"  
 
-# 🚨 ADMIN NUMBER එක (අග කොටස පමණක් සසඳයි)
+# 🚨 ADMIN NUMBER එක
 ADMIN_PURE_NUMBER = "94743689803"
 VERIFY_TOKEN = "my_secret_bot_123" 
 
@@ -60,21 +60,24 @@ def send_official_whatsapp_message(to_jid_or_num, text):
     
     payload = {
         "messaging_product": "whatsapp",
-        "to": to_jid_or_num,
+        "to": str(to_jid_or_num).strip(),
         "type": "text",
         "text": {"preview_url": True, "body": text}
     }
     
-    # චැනල් එකකට නොවේ නම් පමණක් recipient_type එක individual දායි
-    if "@newsletter" not in str(to_jid_or_num):
+    # Recipient Type එක නිවැරදිව සැකසීම
+    if "@newsletter" in str(to_jid_or_num):
+        # චැනල් එකකට නම් recipient_type අවශ්‍ය නැත
+        pass
+    else:
         payload["recipient_type"] = "individual"
 
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
-        print(f"Message Sent to {to_jid_or_num}. Response: {response.json()}")
+        print(f"📡 Message Sent to {to_jid_or_num}. Response: {response.json()}")
         return response.json()
     except Exception as e:
-        print("Official API Failed to send:", e)
+        print("❌ Official API Failed to send:", e)
         return None
 
 # --- ⏰ Scheduler Task ---
@@ -108,40 +111,56 @@ def parse_time_string(time_str):
             in_time = datetime.strptime(time_str, "%I:%M%p")
             return in_time.strftime("%H:%M")
         except ValueError: 
-            return None
+            try:
+                # 24H format (06:30 වගේ ඒවා) සපෝට් කිරීමට
+                in_time = datetime.strptime(time_str, "%H:%M")
+                return in_time.strftime("%H:%M")
+            except ValueError:
+                return None
 
 # --- 🎮 Command Processor ---
 def process_bot_command(command_text):
-    command_text = command_text.strip()
-    db = load_db()
-    
-    if command_text == ".start":
-        db["scheduler_status"] = "started"
-        save_db(db)
-        return "✅ *Auto Scheduler එක සාර්ථකව සක්‍රීය කළා!*"
-    elif command_text == ".stop":
-        db["scheduler_status"] = "stopped"
-        save_db(db)
-        return "🛑 *Auto Scheduler එක තාවකාලිකව නැවැත්තුවා!*"
-    elif command_text.startswith(".set "):
-        time_raw_data = command_text.replace(".set ", "")
-        raw_list = time_raw_data.split(",")
-        parsed_times = []
-        for t in raw_list:
-            formatted_t = parse_time_string(t)
-            if formatted_t: parsed_times.append(formatted_t)
-            else: return f"❌ *වැරදි වෙලාවක්:* '{t}'\n(උදා: `.set 6.30am,11.00am` වගේ දාන්න)"
-        if parsed_times:
-            db["schedule_times"] = parsed_times
+    try:
+        command_text = command_text.strip()
+        db = load_db()
+        
+        if command_text == ".start":
+            db["scheduler_status"] = "started"
             save_db(db)
-            reload_scheduler_jobs()
-            return f"📅 *අලුත් වෙලාවන් සාර්ථකව සකස් කළා:*\n{', '.join(parsed_times)}"
-    elif command_text.startswith(".add "):
-        msg_content = command_text.replace(".add ", "").strip()
-        if msg_content:
-            db["saved_message"] = msg_content
+            return "✅ *Auto Scheduler එක සාර්ථකව සක්‍රීය කළා!*"
+            
+        elif command_text == ".stop":
+            db["scheduler_status"] = "stopped"
             save_db(db)
-            return "📝 *සෙඩියුල් මැසේජ් එක සාර්ථකව Update කළා!*"
+            return "🛑 *Auto Scheduler එක තාවකාලිකව නැවැත්තුවා!*"
+            
+        elif command_text.startswith(".set "):
+            time_raw_data = command_text.replace(".set ", "")
+            raw_list = time_raw_data.split(",")
+            parsed_times = []
+            for t in raw_list:
+                formatted_t = parse_time_string(t)
+                if formatted_t: 
+                    parsed_times.append(formatted_t)
+                else: 
+                    return f"❌ *වැරදි වෙලාවක්:* '{t}'\n(උදා: `.set 6.30am,11.00am` వගේ දාන්න)"
+            if parsed_times:
+                db["schedule_times"] = parsed_times
+                save_db(db)
+                reload_scheduler_jobs()
+                return f"📅 *අලුත් වෙලාවන් සාර්ථකව සකස් කළා:*\n{', '.join(parsed_times)}"
+                
+        elif command_text.startswith(".add "):
+            msg_content = command_text.replace(".add ", "").strip()
+            if msg_content:
+                db["saved_message"] = msg_content
+                save_db(db)
+                return "📝 *සෙඩියුල් මැසේජ් එක සාර්ථකව Update කළා!*"
+                
+    except Exception as e:
+        print(f"Error in process_bot_command: {e}")
+        return "❌ *Command එක Run වෙද්දී Error එකක් ආවා!*"
+        
     return None
 
 # --- 🌐 Web Server & Meta Webhook Integration ---
@@ -167,25 +186,28 @@ def webhook():
             if 'object' in data and data['object'] == 'whatsapp_business_account':
                 for entry in data['entry']:
                     for change in entry['changes']:
-                        if change['value'].get('messages'):
+                        if 'value' in change and change['value'].get('messages'):
                             message = change['value']['messages'][0]
                             from_num = str(message['from']).strip()
                             
-                            print(f"📩 Incoming Message from: {from_num} | Text: {message.get('text', {}).get('body')}")
+                            print(f"📩 Incoming Message from: {from_num}")
                             
-                            if from_num.endswith("743689803") and message['type'] == 'text':
+                            # ඇඩ්මින් අංකය පරීක්ෂා කිරීම (වඩාත් නිවැරදි ක්‍රමය)
+                            if (from_num == ADMIN_PURE_NUMBER or from_num.endswith("743689803")) and message.get('type') == 'text':
                                 text = message['text']['body'].strip()
+                                print(f"💬 Command Received: {text}")
+                                
                                 reply_msg = process_bot_command(text)
                                 if reply_msg:
                                     send_official_whatsapp_message(from_num, reply_msg)
         except Exception as e:
-            print("Error processing webhook data:", e)
+            print("❌ Error processing webhook data:", e)
+            
         return jsonify({"status": "success"}), 200
 
 def self_ping():
     while True:
         try: 
-            # 🔄 මෙතනට ඔයාගේ අලුත් ලින්ක් එක නිවැරදිව දැම්මා (සර්වර් එක 24/7 Live තියන්න)
             requests.get("https://whatsapp-channel-automation.onrender.com", timeout=10)
         except: 
             pass
